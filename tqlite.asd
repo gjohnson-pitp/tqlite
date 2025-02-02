@@ -9,4 +9,6 @@
                 :components ((:file "library")
                              (:file "status-codes")
                              (:file "connection"
+                              :depends-on ("status-codes"))
+                             (:file "statement"
                               :depends-on ("status-codes"))))))
