@@ -13,12 +13,6 @@
 (defclass unfinalized-statement (statement)
   ())
 
-(defclass finished-statement (unfinalized-statement)
-  ())
-
-(defclass unfinished-statement (unfinalized-statement)
-  ())
-
 (defun sqlite3-finalize (statement-pointer)
   (foreign-funcall "sqlite3_finalize"
                    :pointer statement-pointer
@@ -66,14 +60,20 @@
              (write-string "SQLITE_MISUSE returned. Your program and/or this library is broken!"
                            stream))))
 
-(defmethod step-statement ((statement unfinished-statement) row-callback)
+(defun do-nothing (&rest args)
+  (declare (ignore args)))
+
+(defmethod step-statement ((statement unfinalized-statement)
+                           &key
+                             (if-row #'do-nothing)
+                             (if-done #'do-nothing))
   (tagbody
      retry
      (case (sqlite3-step (statement-pointer statement))
        (+sqlite-done+
-        (change-class statement 'finished-statement))
+        (funcall if-done))
        (+sqlite-row+
-        (funcall row-callback
+        (funcall if-row
                  (make-instance 'row
                                 :pointer (statement-pointer statement))))
        (+sqlite-busy+
@@ -95,6 +95,3 @@
   (foreign-funcall "sqlite3_reset"
                    :pointer (statement-pointer statement)
                    :int))
-
-(defmethod reset-statement :after ((statement finished-statement))
-  (change-class statement 'unfinished-statement))
