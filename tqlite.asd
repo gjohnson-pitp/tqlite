@@ -10,4 +10,9 @@
                 :depends-on ("package" "status-codes")
                 :components ((:file "library")
                              (:file "connection")
-                             (:file "statement")))))
+                             (:file "statement")
+                             (:module "statement-module"
+                              :depends-on ("statement")
+                              :components ((:file "row")
+                                           (:file "step"
+                                            :depends-on ("row"))))))))
