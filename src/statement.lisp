@@ -96,6 +96,43 @@
                    :pointer (statement-pointer statement)
                    :int))
 
+(define-condition cannot-make-column (error)
+  ((row :reader error-row
+        :initarg :row)
+   (index :reader error-column-index
+          :initarg :index))
+  (:report (lambda (condition stream)
+             (format stream
+                     "Row ~S has no column with index ~S"
+                     (error-row condition)
+                     (error-column-index condition)))))
+
+;; Each possible return type of sqlite3_column_type corresponds to an
+;; index in this array. 0 shouldn't be returned.
+(defparameter *column-data-types*
+  #(nil
+    int-column
+    float-column
+    text-column
+    blob-column
+    null-column))
+
+(defun column-type-class (type-code)
+  (aref *column-data-types* type-code))
+
+(defmethod make-column ((row row) (column integer))
+  (unless (<= 0 column (1- (foreign-funcall "sqlite3_column_count"
+                                            :pointer (row-pointer row)
+                                            :int)))
+    (error 'cannot-make-column
+           :row row
+           :index column))
+  (make-instance (column-type-class (foreign-funcall "sqlite3_column_type"
+                                                     :pointer (row-pointer row)
+                                                     :int))
+                 :pointer (row-pointer row)
+                 :index column))
+
 (defclass column-type ()
   ((pointer :reader row-pointer
             :initarg :pointer)
