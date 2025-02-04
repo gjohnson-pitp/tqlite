@@ -2,8 +2,8 @@
 (in-package :tqlite)
 
 (defclass connection ()
-  ((sqlite3-pointer :reader sqlite3-pointer
-                    :initarg :sqlite3-pointer)))
+  ((pointer :reader sqlite3-pointer
+            :initarg :pointer)))
 
 (defclass closed-connection (connection)
   ())
@@ -52,8 +52,8 @@
                                          :pointer pointer-to-pointer
                                          :int))
            (connection (make-instance 'open-connection
-                                      :sqlite3-pointer (mem-ref pointer-to-pointer
-                                                                :pointer))))
+                                      :pointer (mem-ref pointer-to-pointer
+                                                        :pointer))))
       (make-instance (if (eql return-code +sqlite-ok+)
                          'successful-connection
                          'failed-connection)
