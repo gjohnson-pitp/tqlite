@@ -40,6 +40,11 @@
   ((pointer :reader row-pointer
             :initarg :pointer)))
 
+(defmethod column-count ((row row))
+  (foreign-funcall "sqlite3_column_count"
+                   :pointer (row-pointer row)
+                   :int))
+
 (defun sqlite3-step (statement-pointer)
   (foreign-funcall "sqlite3_step"
                    :pointer statement-pointer
@@ -176,18 +181,44 @@
 (defun column-type-class (type-code)
   (aref *column-data-types* type-code))
 
-(defmethod make-column ((row row) (column integer))
-  (unless (<= 0 column (1- (foreign-funcall "sqlite3_column_count"
-                                            :pointer (row-pointer row)
-                                            :int)))
-    (error 'cannot-make-column
-           :row row
-           :index column))
-  (make-instance (column-type-class (foreign-funcall "sqlite3_column_type"
-                                                     :pointer (row-pointer row)
-                                                     :int))
-                 :pointer (row-pointer row)
+(defclass column-existence ()
+  ((row :reader column-row
+        :initarg :row)
+   (index :reader column-index
+          :initarg :index)))
+
+(defmethod row-pointer ((column column-existence))
+  (row-pointer (column-row column)))
+
+(defclass column-exists (column-existence)
+  ())
+
+(defun sqlite3-column-type (pointer)
+  (foreign-funcall "sqlite3_column_type"
+                   :pointer pointer
+                   :int))
+
+(defmethod make-column-if-possible ((column column-exists))
+  (make-instance (column-type-class (sqlite3-column-type (row-pointer column)))
+                 :index (column-index column)))
+
+(defclass column-does-not-exist (column-existence)
+  ())
+
+(defmethod make-column-if-possible ((column column-does-not-exist))
+  (error 'cannot-make-column
+         :row (column-row column)
+         :index (column-index column)))
+
+(defmethod try-make-column ((row row) (column integer))
+  (make-instance (if (<= 0 column (1- (column-count (column-row column))))
+                     'column-exists
+                     'column-does-not-exist)
+                 :row row
                  :index column))
+
+(defmethod make-column ((row row) (column integer))
+  (make-column-if-possible (try-make-column row column)))
 
 (defclass column-type ()
   ((pointer :reader row-pointer
