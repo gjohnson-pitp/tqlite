@@ -4,11 +4,10 @@
   :description "Thtructured Query Language (SQL with a Lisp) -- an SQLite3 wrapper"
   :depends-on ("cffi" "trivial-garbage")
   :components ((:file "package")
+               (:file "status-codes"
+                :depends-on ("package"))
                (:module "src"
-                :depends-on ("package")
+                :depends-on ("package" "status-codes")
                 :components ((:file "library")
-                             (:file "status-codes")
-                             (:file "connection"
-                              :depends-on ("status-codes"))
-                             (:file "statement"
-                              :depends-on ("status-codes"))))))
+                             (:file "connection")
+                             (:file "statement")))))
