@@ -95,3 +95,72 @@
   (foreign-funcall "sqlite3_reset"
                    :pointer (statement-pointer statement)
                    :int))
+
+(defclass column-type ()
+  ((pointer :reader row-pointer
+            :initarg :pointer)
+   (index :reader column-index
+          :initarg :index)))
+
+;; I wanted to use a template method for all the methods on this
+;; generic function, but unfortunately it looks like foreign-funcall
+;; is a macro, not a function, so the return type has to be known at
+;; compile time.
+(defgeneric column-value (column-type))
+
+(defclass int-column (column-type)
+  ())
+
+(defmethod column-value ((column int-column))
+  (foreign-funcall "sqlite3_column_int"
+                   :pointer (row-pointer column)
+                   :int (column-index column)
+                   :int))
+
+(defclass float-column (column-type)
+  ())
+
+(defmethod column-value ((column float-column))
+  (foreign-funcall "sqlite3_column_double"
+                   :pointer (row-pointer column)
+                   :int (column-index column)
+                   :double))
+
+(defclass text-column (column-type)
+  ())
+
+(defmethod column-value ((column text-column))
+  ;; The declared return type is a pointer to "unsigned" char, so
+  ;; maybe double-check that it plays nice with CFFI's :string return
+  ;; type...
+  (foreign-funcall "sqlite3_column_text"
+                   :pointer (row-pointer column)
+                   :int (column-index column)
+                   :string))
+
+(defclass blob-column (column-type)
+  ())
+
+(defmethod column-value ((column blob-column))
+  ;; I could've sworn there was a function to do this automatically in
+  ;; the CFFI, but I couldn't find anything in the documentation, so...
+  (loop
+    with byte-count = (foreign-funcall "sqlite3_column_bytes"
+                                       :pointer (row-pointer column)
+                                       :int (column-index column)
+                                       :int)
+    with foreign-bytes = (foreign-funcall "sqlite3_column_blob"
+                                          :pointer (row-pointer column)
+                                          :int (column-index column)
+                                          :pointer)
+    with array = (make-array byte-count :element-type 'unsigned-byte)
+    for i from 0 below byte-count
+    do (setf (aref array i)
+             (mem-ref foreign-bytes :uint8 i))
+    finally (return array)))
+
+(defclass null-column (column-type)
+  ())
+
+(defmethod column-value ((column null-column))
+  nil)
