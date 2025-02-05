@@ -116,6 +116,7 @@
 (defmethod make-column-if-possible ((column column-exists))
   (make-instance (column-type-class (sqlite3-column-type (row-pointer column)
                                                          (column-index column)))
+                 :pointer (row-pointer column)
                  :index (column-index column)))
 
 (defclass column-does-not-exist (column-existence)
@@ -138,7 +139,7 @@
          :index (column-index column)))
 
 (defmethod try-make-column ((row row) (column integer))
-  (make-instance (if (<= 0 column (1- (column-count (column-row column))))
+  (make-instance (if (<= 0 column (1- (column-count row)))
                      'column-exists
                      'column-does-not-exist)
                  :row row

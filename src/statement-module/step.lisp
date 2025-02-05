@@ -83,21 +83,23 @@
                    :pointer statement-pointer
                    :int))
 
+;; I tried using a case statement for this at first because I thought
+;; it'd be less annoying to write, but it turns out that case
+;; statements don't evaluate the keys in their clauses (i.e. the key
+;; in each clause would be the name of the constant rather than the
+;; actual constant), so it's equally annoying to write either way :D
+(defparameter *step-result-classes*
+  `((,+sqlite-done+ . statement-done)
+    (,+sqlite-row+ . statement-has-row)
+    (,+sqlite-busy+ . statement-failed-busy)
+    (,+sqlite-misuse+ . statement-failed-misuse)))
+
+(defun step-result-class (result-code)
+  (cdr (or (assoc result-code *step-result-classes*)
+           (return-from step-result-class 'statement-failed-error))))
+
 (defmethod try-step-statement ((statement unfinalized-statement))
-  ;; It'd probably be better to defparameter an alist to determine the
-  ;; class, but it's annoying to construct those when the keys are
-  ;; variable/constant names rather than literals...
-  (make-instance (case (sqlite3-step (statement-pointer statement))
-                   (+sqlite-done+
-                    'statement-done)
-                   (+sqlite-row+
-                    'statement-has-row)
-                   (+sqlite-busy+
-                    'statement-failed-busy)
-                   (+sqlite-misuse+
-                    'statement-failed-misuse)
-                   (otherwise
-                    'statement-failed-error))
+  (make-instance (step-result-class (sqlite3-step (statement-pointer statement)))
                  :statement statement))
 
 (defun do-nothing (&rest args)
