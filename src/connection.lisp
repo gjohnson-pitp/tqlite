@@ -81,3 +81,35 @@
 
 (defun open-database (name)
   (validate-connection (try-open-database name)))
+
+(define-condition cannot-prepare-statement (sqlite3-error)
+  ((database :reader error-database
+             :initarg :database)
+   (sql :reader error-sql
+        :initarg :sql))
+  (:report (lambda (condition stream)
+             (format stream
+                     "Database ~S failed to prepare a statement from the given ~
+                      SQL code with message: ~S"
+                     (error-database condition)
+                     (error-message condition)))))
+
+;; TODO: Use classes to indicate whether this succeeded for
+;; consistency with everything else?
+(defmethod prepare-statement ((connection open-connection) (code string))
+  (with-foreign-object (pointer-to-pointer :pointer)
+    (if (eql +sqlite-ok+
+             (foreign-funcall "sqlite3_prepare_v2"
+                              :pointer (sqlite3-pointer connection)
+                              :string code
+                              :int -1
+                              :pointer pointer-to-pointer
+                              :pointer (null-pointer)
+                              :int))
+        (make-instance 'unfinalized-statement
+                       :database connection
+                       :pointer (mem-ref pointer-to-pointer :pointer))
+        (error 'cannot-prepare-statement
+               :database connection
+               :message (database-error-message connection)
+               :sql code))))

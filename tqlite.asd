@@ -9,7 +9,8 @@
                (:module "src"
                 :depends-on ("package" "status-codes")
                 :components ((:file "library")
-                             (:file "connection")
+                             (:file "connection"
+                              :depends-on ("statement"))
                              (:file "statement")
                              (:module "statement-module"
                               :depends-on ("statement")
