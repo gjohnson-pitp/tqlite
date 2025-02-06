@@ -147,3 +147,9 @@
 
 (defmethod make-column ((row row) (column integer))
   (make-column-if-possible (try-make-column row column)))
+
+;; TODO: Rename this to column-value, and rename
+;; what's-called-column-value-now to something else--e.g.,
+;; typed-column-value or something?
+(defmethod get-column ((row row) (column integer))
+  (column-value (make-column row column)))
