@@ -4,6 +4,7 @@
   (:export #:open-database
            #:close-database
            #:prepare-statement
+           #:with-statement
            #:finalize-statement
            #:reset-statement
            #:step-statement

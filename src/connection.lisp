@@ -113,3 +113,11 @@
                :database connection
                :message (database-error-message connection)
                :sql code))))
+
+(defun call-with-statement (connection code function)
+  (let ((statement (prepare-statement connection code)))
+    (unwind-protect (funcall function statement)
+      (finalize-statement statement))))
+
+(defmacro with-statement ((variable connection code) &body body)
+  `(call-with-statement ,connection ,code (lambda (,variable) ,@body)))
