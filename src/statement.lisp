@@ -47,3 +47,13 @@
 
 (defmethod reset-statement :after ((statement unbindable-statement))
   (change-class statement 'bindable-statement))
+
+(defmethod step-until-done ((statement unfinalized-statement)
+                            &key (if-row #'do-nothing))
+  (loop
+    (step-statement statement
+                    :if-row if-row
+                    :if-done (lambda () (return)))))
+
+(defmacro do-rows ((row-variable statement) &body body)
+  `(step-until-done ,statement :if-row (lambda (,row-variable) ,@body)))

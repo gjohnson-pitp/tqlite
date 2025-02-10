@@ -8,6 +8,8 @@
            #:finalize-statement
            #:reset-statement
            #:step-statement
+           #:step-until-done
+           #:do-rows
            #:column-count
            #:get-column
            #:cannot-connect-to-database
