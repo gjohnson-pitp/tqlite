@@ -121,3 +121,7 @@
 
 (defmacro with-statement ((variable connection code) &body body)
   `(call-with-statement ,connection ,code (lambda (,variable) ,@body)))
+
+(defun execute-sql (connection code)
+  (with-statement (statement connection code)
+    (step-until-done statement)))

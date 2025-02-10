@@ -5,6 +5,7 @@
            #:close-database
            #:prepare-statement
            #:with-statement
+           #:execute-sql
            #:finalize-statement
            #:reset-statement
            #:step-statement
