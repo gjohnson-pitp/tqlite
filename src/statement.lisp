@@ -13,6 +13,15 @@
 (defclass unfinalized-statement (statement)
   ())
 
+(defclass statement-bindability (unfinalized-statement)
+  ())
+
+(defclass bindable-statement (unfinalized-statement)
+  ())
+
+(defclass unbindable-statement (unfinalized-statement)
+  ())
+
 (defun sqlite3-finalize (statement-pointer)
   (foreign-funcall "sqlite3_finalize"
                    :pointer statement-pointer
@@ -35,3 +44,6 @@
   (foreign-funcall "sqlite3_reset"
                    :pointer (statement-pointer statement)
                    :int))
+
+(defmethod reset-statement :after ((statement unbindable-statement))
+  (change-class statement 'bindable-statement))

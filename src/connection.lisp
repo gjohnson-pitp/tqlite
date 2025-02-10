@@ -106,7 +106,7 @@
                               :pointer pointer-to-pointer
                               :pointer (null-pointer)
                               :int))
-        (make-instance 'unfinalized-statement
+        (make-instance 'bindable-statement
                        :database connection
                        :pointer (mem-ref pointer-to-pointer :pointer))
         (error 'cannot-prepare-statement

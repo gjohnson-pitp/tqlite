@@ -102,6 +102,11 @@
   (make-instance (step-result-class (sqlite3-step (statement-pointer statement)))
                  :statement statement))
 
+;; We have to change class at this point because try-step-statement is
+;; where sqlite3_step is called
+(defmethod try-step-statement :after ((statement bindable-statement))
+  (change-class statement 'unbindable-statement))
+
 (defun do-nothing (&rest args)
   (declare (ignore args)))
 
