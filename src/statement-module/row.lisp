@@ -95,32 +95,11 @@
 (defmethod column-value ((column null-column))
   nil)
 
-(defclass column-existence ()
-  ((row :reader column-row
-        :initarg :row)
-   (index :reader column-index
-          :initarg :index)))
-
-(defmethod row-pointer ((column column-existence))
-  (row-pointer (column-row column)))
-
-(defclass column-exists (column-existence)
-  ())
-
 (defun sqlite3-column-type (pointer index)
   (foreign-funcall "sqlite3_column_type"
                    :pointer pointer
                    :int index
                    :int))
-
-(defmethod make-column-if-possible ((column column-exists))
-  (make-instance (column-type-class (sqlite3-column-type (row-pointer column)
-                                                         (column-index column)))
-                 :pointer (row-pointer column)
-                 :index (column-index column)))
-
-(defclass column-does-not-exist (column-existence)
-  ())
 
 (define-condition cannot-make-column (error)
   ((row :reader error-row
@@ -133,20 +112,15 @@
                      (error-row condition)
                      (error-column-index condition)))))
 
-(defmethod make-column-if-possible ((column column-does-not-exist))
-  (error 'cannot-make-column
-         :row (column-row column)
-         :index (column-index column)))
-
-(defmethod try-make-column ((row row) (column integer))
-  (make-instance (if (<= 0 column (1- (column-count row)))
-                     'column-exists
-                     'column-does-not-exist)
-                 :row row
-                 :index column))
-
 (defmethod make-column ((row row) (column integer))
-  (make-column-if-possible (try-make-column row column)))
+  (if (<= 0 column (1- (column-count row)))
+      (make-instance (column-type-class (sqlite3-column-type (row-pointer row)
+                                                             column))
+                     :pointer (row-pointer row)
+                     :index column)
+      (error 'cannot-make-column
+             :row row
+             :index column)))
 
 ;; TODO: Rename this to column-value, and rename
 ;; what's-called-column-value-now to something else--e.g.,
