@@ -1,0 +1,122 @@
+
+(in-package :tqlite)
+
+(defun sqlite3-bind-parameter-index (statement-pointer name)
+  (foreign-funcall "sqlite3_bind_parameter_index"
+                   :pointer statement-pointer
+                   :string name
+                   :int))
+
+(define-condition bind-parameter-failed (sqlite3-error)
+  ()
+  (:report (lambda (condition stream)
+             (format stream
+                     "Binding parameter failed with message: ~S"
+                     (error-message condition)))))
+
+;;; As much as I'd prefer to do some validation, SQLite allows the
+;;; programmer to specify the index of each parameter, so we have no
+;;; way of knowing whether an index is valid or not unless we parse
+;;; the SQL ourselves. So better to just leave the validation to the
+;;; SQLite side.
+
+(defmethod bind-parameter ((statement bindable-statement) (name string) value)
+  (let ((index (sqlite3-bind-parameter-index (statement-pointer statement)
+                                             name)))
+    (if (zerop index)
+        (error 'bind-parameter-failed
+               :message (database-error-message statement))
+        (bind-parameter statement index value))))
+
+(defmethod bind-parameter ((statement bindable-statement)
+                           (index integer)
+                           (value integer))
+  (unless (eql +sqlite-ok+
+               (foreign-funcall "sqlite3_bind_int"
+                                :pointer (statement-pointer statement)
+                                :int index
+                                :int value
+                                :int))
+    (error 'bind-parameter-failed
+           :message (database-error-message statement))))
+
+(defmethod bind-parameter ((statement bindable-statement)
+                           (index integer)
+                           (value float))
+  (unless (eql +sqlite-ok+
+               (foreign-funcall "sqlite3_bind_double"
+                                :pointer (statement-pointer statement)
+                                :int index
+                                :double value
+                                :int))
+    (error 'bind-parameter-failed
+           :message (database-error-message statement))))
+
+(defcallback deallocate-string :void ((string :pointer))
+  (foreign-string-free string))
+
+(defmethod bind-parameter ((statement bindable-statement)
+                           (index integer)
+                           (value string))
+  (let ((foreign-string (foreign-string-alloc value)))
+    (unless (eql +sqlite-ok+
+                 (foreign-funcall "sqlite3_bind_text"
+                                  :pointer (statement-pointer statement)
+                                  :int index
+                                  :pointer foreign-string
+                                  :int -1
+                                  :pointer (callback deallocate-string)
+                                  :int))
+      (foreign-string-free foreign-string)
+      (error 'bind-parameter-failed
+             :message (database-error-message statement)))))
+
+(defcallback deallocate-blob :void ((blob :pointer))
+  (foreign-free blob))
+
+(defclass valid-blob ()
+  ((contents :reader blob-contents
+             :initarg :contents)))
+
+(define-condition cannot-make-valid-blob (error)
+  ((vector :reader error-vector
+           :initarg :vector))
+  (:report (lambda (condition stream)
+             (format stream
+                     "Argument inferred to be a blob, but ~S cannot be ~
+                      converted to an array of bytes"
+                     (error-vector condition)))))
+
+(defun make-valid-blob (vector)
+  (if (every (lambda (element) (typep element '(unsigned-byte 8)))
+             vector)
+      (make-instance 'valid-blob :contents vector)
+      (error 'cannot-make-valid-blob
+             :vector vector)))
+
+(defmethod make-blob-foreign-pointer ((blob valid-blob))
+  (foreign-alloc :uint8 :initial-contents (blob-contents blob)))
+
+(defmethod blob-length ((blob valid-blob))
+  (length (blob-contents blob)))
+
+(defmethod bind-parameter ((statement bindable-statement)
+                           (index integer)
+                           (value vector))
+  (bind-parameter statement index (make-valid-blob value)))
+
+(defmethod bind-parameter ((statement bindable-statement)
+                           (index integer)
+                           (value valid-blob))
+  (let ((blob-pointer (make-blob-foreign-pointer value)))
+    (unless (eql +sqlite-ok+
+                 (foreign-funcall "sqlite3_bind_blob"
+                                  :pointer (statement-pointer statement)
+                                  :int index
+                                  :pointer blob-pointer
+                                  :int (blob-length value)
+                                  :pointer (callback deallocate-blob)
+                                  :int))
+      (foreign-free blob-pointer)
+      (error 'bind-parameter-failed
+             :message (database-error-message statement)))))

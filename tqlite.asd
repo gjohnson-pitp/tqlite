@@ -16,4 +16,5 @@
                               :depends-on ("statement")
                               :components ((:file "row")
                                            (:file "step"
-                                            :depends-on ("row"))))))))
+                                            :depends-on ("row"))
+                                           (:file "bind")))))))
