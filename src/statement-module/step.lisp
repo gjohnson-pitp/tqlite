@@ -110,10 +110,37 @@
 (defun do-nothing (&rest args)
   (declare (ignore args)))
 
-(defmethod step-statement ((statement unfinalized-statement)
-                           &key
-                             (if-row #'do-nothing)
-                             (if-done #'do-nothing))
-  (act-on-step-result (try-step-statement statement)
-                      if-row
-                      if-done))
+(defgeneric step-statement (statement &key if-row if-done)
+  (:documentation "(step-statement statement &key if-row if-done)
+
+Steps the given statement. IF-ROW should be a function of one
+argument, and IF-DONE a function of no arguments. A default is
+provided for each if not passed.
+
+If stepping the statement returns a result row, then IF-ROW is called
+with a ROW object as argument. Columns can be retrieved from the ROW
+object using GET-COLUMN. The ROW object is only guaranteed to be valid
+during the execution of the IF-ROW callback, and so should not be
+saved.
+
+If the statement finished, IF-DONE is called with no arguments. Use
+this to, e.g., exit from loops.
+
+Once a statement has been stepped at least once, it must be reset
+before any new parameters can be bound to it.
+
+For the common case of stepping a statement until it's done, use
+STEP-UNTIL-DONE. As a shorthand for calling STEP-UNTIL-DONE with an
+IF-ROW callback, use the macro DO-ROWS.
+
+SEE ALSO:
+get-column
+step-until-done
+do-rows")
+  (:method ((statement unfinalized-statement)
+            &key
+              (if-row #'do-nothing)
+              (if-done #'do-nothing))
+    (act-on-step-result (try-step-statement statement)
+                        if-row
+                        if-done)))

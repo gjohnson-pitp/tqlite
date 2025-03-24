@@ -8,10 +8,17 @@
   ((pointer :reader row-pointer
             :initarg :pointer)))
 
-(defmethod column-count ((row row))
-  (foreign-funcall "sqlite3_column_count"
-                   :pointer (row-pointer row)
-                   :int))
+(defgeneric column-count (row)
+  (:documentation "(column-count row) => count
+
+Returns the number of columns in ROW.
+
+SEE ALSO:
+get-column")
+  (:method ((row row))
+    (foreign-funcall "sqlite3_column_count"
+                     :pointer (row-pointer row)
+                     :int)))
 
 ;; Each possible return type of sqlite3_column_type corresponds to an
 ;; index in this array. 0 shouldn't be returned.
@@ -125,5 +132,17 @@
 ;; TODO: Rename this to column-value, and rename
 ;; what's-called-column-value-now to something else--e.g.,
 ;; typed-column-value or something?
-(defmethod get-column ((row row) (column integer))
-  (column-value (make-column row column)))
+(defgeneric get-column (row column)
+  (:documentation "(get-column row column) => column-value
+
+Returns the value of the COLUMNth column in ROW, with indices starting
+at 0. The type of the column is queried from SQLite; currently, no
+mechanism to retrieve the value as a different type has been
+implemented. In accordance with the underlying SQLite API, no
+mechanism for retrieving columns by name exists either. BLOB's are
+treated as arrays of unsigned bytes.
+
+SEE ALSO:
+column-count")
+  (:method ((row row) (column integer))
+    (column-value (make-column row column))))

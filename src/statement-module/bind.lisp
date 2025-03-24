@@ -20,6 +20,29 @@
 ;;; the SQL ourselves. So better to just leave the validation to the
 ;;; SQLite side.
 
+(defgeneric bind-parameter (statement index value)
+  (:documentation "(bind-parameter statement index value)
+
+Binds the given value to the parameter with the given index in the
+given statement. For named parameters, a string can be given in place
+of an index.
+
+The type of the parameter is inferred from the type of VALUE. An
+integer is assumed to correspond to an integer parameter, a
+floating-point number to a double parameter, a string to a text
+parameter, and a vector other than a string to a blob parameter. If
+the vector's elements are not all unsigned bytes, then an error of
+type CANNOT-MAKE-VALID-BLOB is thrown.
+
+Once a statement has been stepped at least once, it must be reset with
+RESET-STATEMENT before it can have new parameters bound to
+it. Attempting to bind parameters to a statement that's already been
+stepped and not reset will result in a NO-APPLICABLE-METHOD error.
+
+SEE ALSO:
+step-statement
+reset-statement"))
+
 (defmethod bind-parameter ((statement bindable-statement) (name string) value)
   (let ((index (sqlite3-bind-parameter-index (statement-pointer statement)
                                              name)))
