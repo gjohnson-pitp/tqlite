@@ -12,6 +12,7 @@
            #:step-until-done
            #:do-rows
            #:bind-parameter
+           #:clear-bindings
            #:column-count
            #:get-column
            #:cannot-connect-to-database

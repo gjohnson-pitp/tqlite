@@ -29,10 +29,10 @@ of an index.
 
 The type of the parameter is inferred from the type of VALUE. An
 integer is assumed to correspond to an integer parameter, a
-floating-point number to a double parameter, a string to a text
-parameter, and a vector other than a string to a blob parameter. If
-the vector's elements are not all unsigned bytes, then an error of
-type CANNOT-MAKE-VALID-BLOB is thrown.
+floating-point number to a double parameter, nil to a null parameter,
+a string to a text parameter, and a vector other than a string to a
+blob parameter. If the vector's elements are not all unsigned bytes,
+then an error of type CANNOT-MAKE-VALID-BLOB is thrown.
 
 Once a statement has been stepped at least once, it must be reset with
 RESET-STATEMENT before it can have new parameters bound to
@@ -41,7 +41,8 @@ stepped and not reset will result in a NO-APPLICABLE-METHOD error.
 
 SEE ALSO:
 step-statement
-reset-statement"))
+reset-statement
+clear-bindings"))
 
 (defmethod bind-parameter ((statement bindable-statement) (name string) value)
   (let ((index (sqlite3-bind-parameter-index (statement-pointer statement)
@@ -143,3 +144,38 @@ reset-statement"))
       (foreign-free blob-pointer)
       (error 'bind-parameter-failed
              :message (database-error-message statement)))))
+
+(defmethod bind-parameter ((statement bindable-statement)
+                           (index integer)
+                           (value null))
+  (unless (eql +sqlite-ok+
+               (foreign-funcall "sqlite3_bind_null"
+                                :pointer (statement-pointer statement)
+                                :int index
+                                :int))
+    (error 'bind-parameter-failed
+           :message (database-error-message statement))))
+
+(defgeneric clear-bindings (statement)
+  (:documentation "(clear-bindings statement)
+
+Clears all parameter bindings on the given statement.
+
+In SQLite, any unbound parameters are implicitly bound to null. Thus,
+one can argue that there isn't actually any such thing as an \"unbound
+parameter\" in SQLite. But you can use this to at least ensure that
+e.g. a statement isn't accidentally stepped with the same arguments
+twice in a row.
+
+SEE ALSO:
+bind-parameter")
+  (:method ((statement statement))
+    ;; This returns an int, but the documentation has no information
+    ;; on the return value. I thought maybe it works like
+    ;; bind-parameter, but then using it after stepping a statement
+    ;; (when binding new parameters isn't allowed) didn't return
+    ;; SQLITE_MISUSE. So I can only assume that this operation never
+    ;; fails
+    (foreign-funcall "sqlite3_clear_bindings"
+                     :pointer (statement-pointer statement)
+                     :int)))
