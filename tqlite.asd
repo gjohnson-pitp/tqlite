@@ -2,6 +2,7 @@
 (defsystem "tqlite"
   :author "Gabriel Johnson <gabriel.johnson.pitp@gmail.com>"
   :description "Thtructured Query Language (SQL with a Lisp) -- an SQLite3 wrapper"
+  :license "BSD"
   :depends-on ("cffi" "trivial-garbage")
   :components ((:file "package")
                (:file "status-codes"
