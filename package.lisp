@@ -4,6 +4,7 @@
   (:export #:open-database
            #:close-database
            #:prepare-statement
+           #:prepare-persistent-statement
            #:with-statement
            #:execute-sql
            #:finalize-statement

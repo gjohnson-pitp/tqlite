@@ -149,6 +149,7 @@ operations on a statement that's already been finalized will result in
 an error. See FINALIZE-STATEMENT for details.
 
 SEE ALSO:
+prepare-persistent-statement
 finalize-statement
 with-statement
 bind-parameter
@@ -163,6 +164,36 @@ reset-statement")
                                 :pointer (sqlite3-pointer connection)
                                 :string code
                                 :int -1
+                                :pointer pointer-to-pointer
+                                :pointer (null-pointer)
+                                :int))
+          (make-instance 'bindable-statement
+                         :database connection
+                         :pointer (mem-ref pointer-to-pointer :pointer))
+          (error 'cannot-prepare-statement
+                 :database connection
+                 :message (database-error-message connection)
+                 :sql code)))))
+
+(defconstant +sqlite-prepare-persistent+ #x01)
+
+;; TODO: DRY out the repeated parts between this and prepare-statement
+(defgeneric prepare-persistent-statement (connection code)
+  (:documentation "(prepare-persistent-statement connection code) => statement-object
+
+Prepares a persistent statement object. A persistent statement is
+identical to any other statement from Lisp's perspective, but SQLite
+will store it differently.
+
+See PREPARE-STATEMENT for details.")
+  (:method ((connection open-connection) (code string))
+    (with-foreign-object (pointer-to-pointer :pointer)
+      (if (eql +sqlite-ok+
+               (foreign-funcall "sqlite3_prepare_v3"
+                                :pointer (sqlite3-pointer connection)
+                                :string code
+                                :int -1
+                                :uint +sqlite-prepare-persistent+
                                 :pointer pointer-to-pointer
                                 :pointer (null-pointer)
                                 :int))
