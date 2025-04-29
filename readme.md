@@ -1,13 +1,9 @@
 
 # TQLite (Thtructured Query Language Lite) – SQLite with a Lisp
 
----
-
 I've found that existing Lisp bindings to C libraries tend to do too much, forcing you to adopt very specific workflows in order to accommodate the library rather than the library accommodating you. This binding aims, on the one hand, to mirror the underlying SQLite API as much as possible, treating any extra macros or functions as convenient shortcuts rather than unavoidable parts of the interface; and on the other hand, to use CLOS and other Lisp features to actually enforce the rules that C libraries allow to be broken and lead to undefined behavior.
 
 ## Installation
-
----
 
 This package is not on Quicklisp at the moment, and I don't feel ready to have it put there yet, so you'll have to copy the source code to ~/common-lisp, ~/quicklisp/local-projects, or any other directory your ASDF / Quicklisp is aware of. At a terminal, cd into whatever directory you chose and git clone into this repository:
 
@@ -20,8 +16,6 @@ Now, you should be able to load TQLite with `(ql:quickload "tqlite")` or `(asdf:
 I recommend loading with Quicklisp. The only direct dependencies are `cffi` and `trivial-garbage`, but loading the dependencies of the dependencies is the real hassle.
 
 ## Usage
-
----
 
 Open a database connection with
 
@@ -111,8 +105,6 @@ Note that resetting a statement does *not* reset parameter bindings; stepping th
 - Give more informative error messages when an invalid operation is attempted (see Design Principles below)
 
 ## Design Principles
-
----
 
 This library was written to prioritize ease of reasoning above all else, and it accomplishes this using the Curry–Howard correspondence. The Curry–Howard correspondence essentially says that a program is equivalent to a logical proof if we view types as propositions and functions from type A to type B as proofs that A implies B. Thus, this library is written so that most every proposition of interest to the program corresponds to a class; generic functions are used extensively as a replacement for conditional statements (I think you'll find there are hardly any conditionals in this library) and to ensure that the preconditions of functions are met; and even runtime class changing is used to indicate changes of state that affect an object's valid operations, in particular to indicate when database connections are closed and statements are finalized. So I haven't benchmarked it or anything, but I'm afraid I can't make any guarantees about the performance of this library.
 
