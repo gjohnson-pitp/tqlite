@@ -130,6 +130,21 @@ execute-sql"
                      (error-database condition)
                      (error-message condition)))))
 
+;; DRY'ed out code that was common to prepare-statement and
+;; prepare-persistent-statement below. It takes a callback to allow
+;; pointer-to-pointer to be allocated in the subroutine rather than
+;; the caller
+(defun try-prepare-statement (connection callback code)
+  (with-foreign-object (pointer-to-pointer :pointer)
+    (if (eql +sqlite-ok+ (funcall callback pointer-to-pointer))
+        (make-instance 'bindable-statement
+                       :database connection
+                       :pointer (mem-ref pointer-to-pointer :pointer))
+        (error 'cannot-prepare-statement
+               :database connection
+               :message (database-error-message connection)
+               :sql code))))
+
 (defgeneric prepare-statement (connection code)
   (:documentation "(prepare-statement connection code) => statement-object
 
@@ -158,26 +173,19 @@ step-until-done
 do-rows
 reset-statement")
   (:method ((connection open-connection) (code string))
-    (with-foreign-object (pointer-to-pointer :pointer)
-      (if (eql +sqlite-ok+
-               (foreign-funcall "sqlite3_prepare_v2"
-                                :pointer (sqlite3-pointer connection)
-                                :string code
-                                :int -1
-                                :pointer pointer-to-pointer
-                                :pointer (null-pointer)
-                                :int))
-          (make-instance 'bindable-statement
-                         :database connection
-                         :pointer (mem-ref pointer-to-pointer :pointer))
-          (error 'cannot-prepare-statement
-                 :database connection
-                 :message (database-error-message connection)
-                 :sql code)))))
+    (try-prepare-statement connection
+                           (lambda (pointer-to-pointer)
+                             (foreign-funcall "sqlite3_prepare_v2"
+                                              :pointer (sqlite3-pointer connection)
+                                              :string code
+                                              :int -1
+                                              :pointer pointer-to-pointer
+                                              :pointer (null-pointer)
+                                              :int))
+                           code)))
 
 (defconstant +sqlite-prepare-persistent+ #x01)
 
-;; TODO: DRY out the repeated parts between this and prepare-statement
 (defgeneric prepare-persistent-statement (connection code)
   (:documentation "(prepare-persistent-statement connection code) => statement-object
 
@@ -187,23 +195,17 @@ will store it differently.
 
 See PREPARE-STATEMENT for details.")
   (:method ((connection open-connection) (code string))
-    (with-foreign-object (pointer-to-pointer :pointer)
-      (if (eql +sqlite-ok+
-               (foreign-funcall "sqlite3_prepare_v3"
-                                :pointer (sqlite3-pointer connection)
-                                :string code
-                                :int -1
-                                :uint +sqlite-prepare-persistent+
-                                :pointer pointer-to-pointer
-                                :pointer (null-pointer)
-                                :int))
-          (make-instance 'bindable-statement
-                         :database connection
-                         :pointer (mem-ref pointer-to-pointer :pointer))
-          (error 'cannot-prepare-statement
-                 :database connection
-                 :message (database-error-message connection)
-                 :sql code)))))
+    (try-prepare-statement connection
+                           (lambda (pointer-to-pointer)
+                             (foreign-funcall "sqlite3_prepare_v3"
+                                              :pointer (sqlite3-pointer connection)
+                                              :string code
+                                              :int -1
+                                              :uint +sqlite-prepare-persistent+
+                                              :pointer pointer-to-pointer
+                                              :pointer (null-pointer)
+                                              :int))
+                           code)))
 
 (defun call-with-statement (connection code function)
   (let ((statement (prepare-statement connection code)))
