@@ -1,12 +1,6 @@
 
 (in-package :tqlite)
 
-(defun sqlite3-bind-parameter-index (statement-pointer name)
-  (foreign-funcall "sqlite3_bind_parameter_index"
-                   :pointer statement-pointer
-                   :string name
-                   :int))
-
 (define-condition bind-parameter-failed (sqlite3-error)
   ()
   (:report (lambda (condition stream)
@@ -56,11 +50,7 @@ clear-bindings"))
                            (index integer)
                            (value integer))
   (unless (eql +sqlite-ok+
-               (foreign-funcall "sqlite3_bind_int"
-                                :pointer (statement-pointer statement)
-                                :int index
-                                :int value
-                                :int))
+               (sqlite3-bind-int (statement-pointer statement) index value))
     (error 'bind-parameter-failed
            :message (database-error-message statement))))
 
@@ -68,11 +58,9 @@ clear-bindings"))
                            (index integer)
                            (value float))
   (unless (eql +sqlite-ok+
-               (foreign-funcall "sqlite3_bind_double"
-                                :pointer (statement-pointer statement)
-                                :int index
-                                :double (coerce value 'double-float)
-                                :int))
+               (sqlite3-bind-double (statement-pointer statement)
+                                    index
+                                    (coerce value 'double-float)))
     (error 'bind-parameter-failed
            :message (database-error-message statement))))
 
@@ -84,13 +72,11 @@ clear-bindings"))
                            (value string))
   (let ((foreign-string (foreign-string-alloc value)))
     (unless (eql +sqlite-ok+
-                 (foreign-funcall "sqlite3_bind_text"
-                                  :pointer (statement-pointer statement)
-                                  :int index
-                                  :pointer foreign-string
-                                  :int -1
-                                  :pointer (callback deallocate-string)
-                                  :int))
+                 (sqlite3-bind-text (statement-pointer statement)
+                                    index
+                                    foreign-string
+                                    -1
+                                    (callback deallocate-string)))
       (foreign-string-free foreign-string)
       (error 'bind-parameter-failed
              :message (database-error-message statement)))))
@@ -134,13 +120,11 @@ clear-bindings"))
                            (value valid-blob))
   (let ((blob-pointer (make-blob-foreign-pointer value)))
     (unless (eql +sqlite-ok+
-                 (foreign-funcall "sqlite3_bind_blob"
-                                  :pointer (statement-pointer statement)
-                                  :int index
-                                  :pointer blob-pointer
-                                  :int (blob-length value)
-                                  :pointer (callback deallocate-blob)
-                                  :int))
+                 (sqlite3-bind-blob (statement-pointer statement)
+                                    index
+                                    blob-pointer
+                                    (blob-length value)
+                                    (callback deallocate-blob)))
       (foreign-free blob-pointer)
       (error 'bind-parameter-failed
              :message (database-error-message statement)))))
@@ -149,10 +133,7 @@ clear-bindings"))
                            (index integer)
                            (value null))
   (unless (eql +sqlite-ok+
-               (foreign-funcall "sqlite3_bind_null"
-                                :pointer (statement-pointer statement)
-                                :int index
-                                :int))
+               (sqlite3-bind-null (statement-pointer statement) index))
     (error 'bind-parameter-failed
            :message (database-error-message statement))))
 
@@ -176,6 +157,4 @@ bind-parameter")
     ;; (when binding new parameters isn't allowed) didn't return
     ;; SQLITE_MISUSE. So I can only assume that this operation never
     ;; fails
-    (foreign-funcall "sqlite3_clear_bindings"
-                     :pointer (statement-pointer statement)
-                     :int)))
+    (sqlite3-clear-bindings (statement-pointer statement))))
