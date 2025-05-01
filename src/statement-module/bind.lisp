@@ -71,7 +71,7 @@ clear-bindings"))
                (foreign-funcall "sqlite3_bind_double"
                                 :pointer (statement-pointer statement)
                                 :int index
-                                :double value
+                                :double (coerce value 'double-float)
                                 :int))
     (error 'bind-parameter-failed
            :message (database-error-message statement))))
