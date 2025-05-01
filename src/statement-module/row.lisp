@@ -16,9 +16,7 @@ Returns the number of columns in ROW.
 SEE ALSO:
 get-column")
   (:method ((row row))
-    (foreign-funcall "sqlite3_column_count"
-                     :pointer (row-pointer row)
-                     :int)))
+    (sqlite3-column-count (row-pointer row))))
 
 ;; Each possible return type of sqlite3_column_type corresponds to an
 ;; index in this array. 0 shouldn't be returned.
@@ -49,31 +47,20 @@ get-column")
   ())
 
 (defmethod column-value ((column int-column))
-  (foreign-funcall "sqlite3_column_int"
-                   :pointer (row-pointer column)
-                   :int (column-index column)
-                   :int))
+  (sqlite3-column-int (row-pointer column) (column-index column)))
 
 (defclass float-column (column-type)
   ())
 
 (defmethod column-value ((column float-column))
-  (foreign-funcall "sqlite3_column_double"
-                   :pointer (row-pointer column)
-                   :int (column-index column)
-                   :double))
+  (sqlite3-column-double (row-pointer column)
+                         (column-index column)))
 
 (defclass text-column (column-type)
   ())
 
 (defmethod column-value ((column text-column))
-  ;; The declared return type is a pointer to "unsigned" char, so
-  ;; maybe double-check that it plays nice with CFFI's :string return
-  ;; type...
-  (foreign-funcall "sqlite3_column_text"
-                   :pointer (row-pointer column)
-                   :int (column-index column)
-                   :string))
+  (sqlite3-column-text (row-pointer column) (column-index column)))
 
 (defclass blob-column (column-type)
   ())
@@ -82,14 +69,10 @@ get-column")
   ;; I could've sworn there was a function to do this automatically in
   ;; the CFFI, but I couldn't find anything in the documentation, so...
   (loop
-    with byte-count = (foreign-funcall "sqlite3_column_bytes"
-                                       :pointer (row-pointer column)
-                                       :int (column-index column)
-                                       :int)
-    with foreign-bytes = (foreign-funcall "sqlite3_column_blob"
-                                          :pointer (row-pointer column)
-                                          :int (column-index column)
-                                          :pointer)
+    with byte-count = (sqlite3-column-bytes (row-pointer column)
+                                            (column-index column))
+    with foreign-bytes = (sqlite3-column-blob (row-pointer column)
+                                              (column-index column))
     with array = (make-array byte-count :element-type 'unsigned-byte)
     for i from 0 below byte-count
     do (setf (aref array i)
@@ -101,12 +84,6 @@ get-column")
 
 (defmethod column-value ((column null-column))
   nil)
-
-(defun sqlite3-column-type (pointer index)
-  (foreign-funcall "sqlite3_column_type"
-                   :pointer pointer
-                   :int index
-                   :int))
 
 (define-condition cannot-make-column (error)
   ((row :reader error-row
