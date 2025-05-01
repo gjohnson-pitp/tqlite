@@ -11,17 +11,11 @@
 (defclass open-connection (connection)
   ())
 
-(defun sqlite3-close (pointer)
-  ;; TODO: Do something if this fails?
-  (foreign-funcall "sqlite3_close_v2"
-                   :pointer pointer
-                   :int))
-
 (defmethod initialize-instance :after ((connection open-connection)
                                        &key sqlite3-pointer)
   (finalize connection
             (lambda ()
-              (sqlite3-close sqlite3-pointer))))
+              (sqlite3-close-v2 sqlite3-pointer))))
 
 (defgeneric close-database (connection)
   (:documentation "(close-database connection)
@@ -42,14 +36,12 @@ database twice during normal use of this package.
 SEE ALSO:
 open-database")
   (:method ((connection open-connection))
-    (sqlite3-close (sqlite3-pointer connection))
+    (sqlite3-close-v2 (sqlite3-pointer connection))
     (cancel-finalization connection)
     (change-class connection 'closed-connection)))
 
 (defmethod database-error-message ((connection open-connection))
-  (foreign-funcall "sqlite3_errmsg"
-                   :pointer (sqlite3-pointer connection)
-                   :string))
+  (sqlite3-errmsg (sqlite3-pointer connection)))
 
 (defclass connection-result ()
   ((name :reader result-database-name
@@ -65,10 +57,7 @@ open-database")
 
 (defun try-open-database (name)
   (with-foreign-object (pointer-to-pointer :pointer)
-    (let* ((return-code (foreign-funcall "sqlite3_open"
-                                         :string name
-                                         :pointer pointer-to-pointer
-                                         :int))
+    (let* ((return-code (sqlite3-open name pointer-to-pointer))
            (connection (make-instance 'open-connection
                                       :pointer (mem-ref pointer-to-pointer
                                                         :pointer))))
@@ -175,13 +164,11 @@ reset-statement")
   (:method ((connection open-connection) (code string))
     (try-prepare-statement connection
                            (lambda (pointer-to-pointer)
-                             (foreign-funcall "sqlite3_prepare_v2"
-                                              :pointer (sqlite3-pointer connection)
-                                              :string code
-                                              :int -1
-                                              :pointer pointer-to-pointer
-                                              :pointer (null-pointer)
-                                              :int))
+                             (sqlite3-prepare-v2 (sqlite3-pointer connection)
+                                                 code
+                                                 -1
+                                                 pointer-to-pointer
+                                                 (null-pointer)))
                            code)))
 
 (defconstant +sqlite-prepare-persistent+ #x01)
@@ -197,14 +184,12 @@ See PREPARE-STATEMENT for details.")
   (:method ((connection open-connection) (code string))
     (try-prepare-statement connection
                            (lambda (pointer-to-pointer)
-                             (foreign-funcall "sqlite3_prepare_v3"
-                                              :pointer (sqlite3-pointer connection)
-                                              :string code
-                                              :int -1
-                                              :uint +sqlite-prepare-persistent+
-                                              :pointer pointer-to-pointer
-                                              :pointer (null-pointer)
-                                              :int))
+                             (sqlite3-prepare-v3 (sqlite3-pointer connection)
+                                                 code
+                                                 -1
+                                                 +sqlite-prepare-persistent+
+                                                 pointer-to-pointer
+                                                 (null-pointer)))
                            code)))
 
 (defun call-with-statement (connection code function)
