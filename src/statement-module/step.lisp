@@ -78,11 +78,6 @@
          :statement (result-statement result)
          :message (database-error-message result)))
 
-(defun sqlite3-step (statement-pointer)
-  (foreign-funcall "sqlite3_step"
-                   :pointer statement-pointer
-                   :int))
-
 ;; I tried using a case statement for this at first because I thought
 ;; it'd be less annoying to write, but it turns out that case
 ;; statements don't evaluate the keys in their clauses (i.e. the key
