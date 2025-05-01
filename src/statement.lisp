@@ -22,11 +22,6 @@
 (defclass unbindable-statement (unfinalized-statement)
   ())
 
-(defun sqlite3-finalize (statement-pointer)
-  (foreign-funcall "sqlite3_finalize"
-                   :pointer statement-pointer
-                   :int))
-
 (defmethod initialize-instance :after ((statement unfinalized-statement)
                                        &key pointer)
   (finalize statement
@@ -73,9 +68,7 @@ before. sqlite3_clear_bindings is not yet implemented.
 See documentation for prepare-statement for other operations on
 statements.")
   (:method ((statement unfinalized-statement))
-    (foreign-funcall "sqlite3_reset"
-                     :pointer (statement-pointer statement)
-                     :int)))
+    (sqlite3-reset (statement-pointer statement))))
 
 (defmethod reset-statement :after ((statement unbindable-statement))
   (change-class statement 'bindable-statement))
