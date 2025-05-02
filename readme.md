@@ -99,7 +99,6 @@ Note that resetting a statement does *not* reset parameter bindings; stepping th
 
 ### Other TODO's
 
-- Migrate from `foreign-funcall` to `defcfun`, as the latter is apparently more portable
 - Enforce requirements on string encoding (as it is, UTF-8 is simply assumed)
 - Maybe to make `step-statement` easier to use in loops, in addition to the `if-done` callback, give the option of checking the return value to see if the statement is done?
 - Give more informative error messages when an invalid operation is attempted (see Design Principles below)
