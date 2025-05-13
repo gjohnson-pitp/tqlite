@@ -11,8 +11,7 @@
                 :components ((:module "common"
                               :components ((:cffi-grovel-file "sqlite3-grovel")
                                            (:file "c-functions")
-                                           (:file "status-codes"
-                                            :depends-on ("c-functions"))))
+                                           (:file "sqlite3-error")))
                              (:module "main"
                               :depends-on ("common")
                               :components ((:file "library")
