@@ -104,7 +104,8 @@ SEE ALSO:
 close-database
 prepare-statement
 with-statement
-execute-sql"
+execute-sql
+last-insert-rowid"
   (validate-connection (try-open-database name)))
 
 (define-condition cannot-prepare-statement (sqlite3-error)
@@ -224,3 +225,16 @@ SEE ALSO:
 prepare-statement"
   (with-statement (statement connection code)
     (step-until-done statement)))
+
+(defgeneric last-insert-rowid (connection)
+  (:documentation "(last-insert-rowid connection) => integer
+
+Returns the ID of the last row successfully inserted into a table with
+an auto-incremented column. In SQLite3, any column of type INTEGER
+PRIMARY KEY is treated as auto-incrementing; passing the AUTOINCREMENT
+keyword explicitly only changes the algorithm for determining new
+ID's.
+
+See the SQLite3 documentation for details.")
+  (:method ((connection open-connection))
+    (sqlite3-last-insert-rowid (sqlite3-pointer connection))))

@@ -3,6 +3,7 @@
   (:use :cl :cffi :trivial-garbage)
   (:export #:open-database
            #:close-database
+           #:last-insert-rowid
            #:prepare-statement
            #:prepare-persistent-statement
            #:with-statement

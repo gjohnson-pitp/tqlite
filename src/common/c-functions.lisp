@@ -72,6 +72,9 @@
 (defcfun "sqlite3_finalize" :int
   (statement :pointer))
 
+(defcfun "sqlite3_last_insert_rowid" sqlite3-int64
+  (connection :pointer))
+
 (defcfun "sqlite3_open" :int
   (filename :string)
   (connection-pointer :pointer))

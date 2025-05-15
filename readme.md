@@ -95,7 +95,6 @@ Note that resetting a statement does *not* reset parameter bindings; stepping th
 - The distinction between `int` and `int64`
 - Opening BLOB's as streams
 - Getting the value of a column in a data type other than what SQLite says it is by default
-- `sqlite3_last_insert_rowid`; at the moment, you'll have to access it from SQL: `SELECT LAST_INSERT_ROWID()`
 
 ### Other TODO's
 
