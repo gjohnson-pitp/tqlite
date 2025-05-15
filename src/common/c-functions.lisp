@@ -13,10 +13,10 @@
   (index :int)
   (value :double))
 
-(defcfun "sqlite3_bind_int" :int
+(defcfun "sqlite3_bind_int64" :int
   (statement :pointer)
   (index :int)
-  (value :int))
+  (value sqlite3-int64))
 
 (defcfun "sqlite3_bind_null" :int
   (statement :pointer)
@@ -54,7 +54,7 @@
   (statement :pointer)
   (column-index :int))
 
-(defcfun "sqlite3_column_int" :int
+(defcfun "sqlite3_column_int64" sqlite3-int64
   (statement :pointer)
   (column-index :int))
 

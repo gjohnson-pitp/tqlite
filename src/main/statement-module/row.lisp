@@ -47,7 +47,7 @@ get-column")
   ())
 
 (defmethod column-value ((column int-column))
-  (sqlite3-column-int (row-pointer column) (column-index column)))
+  (sqlite3-column-int64 (row-pointer column) (column-index column)))
 
 (defclass float-column (column-type)
   ())

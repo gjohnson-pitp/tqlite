@@ -50,7 +50,7 @@ clear-bindings"))
                            (index integer)
                            (value integer))
   (unless (eql +sqlite-ok+
-               (sqlite3-bind-int (statement-pointer statement) index value))
+               (sqlite3-bind-int64 (statement-pointer statement) index value))
     (error 'bind-parameter-failed
            :message (database-error-message statement))))
 
