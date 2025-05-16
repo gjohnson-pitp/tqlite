@@ -16,3 +16,5 @@
 (constant (+sqlite-done+ "SQLITE_DONE"))
 
 (constant (+sqlite-misuse+ "SQLITE_MISUSE"))
+
+(constant (+sqlite-prepare-persistent+ "SQLITE_PREPARE_PERSISTENT"))

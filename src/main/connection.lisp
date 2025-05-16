@@ -169,8 +169,6 @@ reset-statement")
   (:method ((connection open-connection) (code string))
     (%prepare-statement connection code 0)))
 
-(defconstant +sqlite-prepare-persistent+ #x01)
-
 (defgeneric prepare-persistent-statement (connection code)
   (:documentation "(prepare-persistent-statement connection code) => statement-object
 
