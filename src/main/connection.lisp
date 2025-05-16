@@ -150,13 +150,11 @@ reset-statement")
   (:method ((connection open-connection) (code string))
     (with-foreign-object (pointer-to-pointer :pointer)
       (if (eql +sqlite-ok+
-               (foreign-funcall "sqlite3_prepare_v2"
-                                :pointer (sqlite3-pointer connection)
-                                :string code
-                                :int -1
-                                :pointer pointer-to-pointer
-                                :pointer (null-pointer)
-                                :int))
+               (sqlite3-prepare-v2 (sqlite3-pointer connection)
+                                   code
+                                   -1
+                                   pointer-to-pointer
+                                   (null-pointer)))
           (make-instance 'bindable-statement
                          :database connection
                          :pointer (mem-ref pointer-to-pointer :pointer))
@@ -178,14 +176,12 @@ See PREPARE-STATEMENT for details.")
   (:method ((connection open-connection) (code string))
     (with-foreign-object (pointer-to-pointer :pointer)
       (if (eql +sqlite-ok+
-               (foreign-funcall "sqlite3_prepare_v3"
-                                :pointer (sqlite3-pointer connection)
-                                :string code
-                                :int -1
-                                :uint +sqlite-prepare-persistent+
-                                :pointer pointer-to-pointer
-                                :pointer (null-pointer)
-                                :int))
+               (sqlite3-prepare-v3 (sqlite3-pointer connection)
+                                   code
+                                   -1
+                                   +sqlite-prepare-persistent+
+                                   pointer-to-pointer
+                                   (null-pointer)))
           (make-instance 'bindable-statement
                          :database connection
                          :pointer (mem-ref pointer-to-pointer :pointer))
