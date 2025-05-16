@@ -120,6 +120,25 @@ last-insert-rowid"
                      (error-database condition)
                      (error-message condition)))))
 
+;; Common code between prepare-statement and
+;; prepare-persistent-statement
+(defun %prepare-statement (connection code flags)
+  (with-foreign-object (pointer-to-pointer :pointer)
+    (if (eql +sqlite-ok+
+             (sqlite3-prepare-v3 (sqlite3-pointer connection)
+                                 code
+                                 -1
+                                 flags
+                                 pointer-to-pointer
+                                 (null-pointer)))
+        (make-instance 'bindable-statement
+                       :database connection
+                       :pointer (mem-ref pointer-to-pointer :pointer))
+        (error 'cannot-prepare-statement
+               :database connection
+               :message (database-error-message connection)
+               :sql code))))
+
 (defgeneric prepare-statement (connection code)
   (:documentation "(prepare-statement connection code) => statement-object
 
@@ -148,21 +167,7 @@ step-until-done
 do-rows
 reset-statement")
   (:method ((connection open-connection) (code string))
-    (with-foreign-object (pointer-to-pointer :pointer)
-      (if (eql +sqlite-ok+
-               (sqlite3-prepare-v3 (sqlite3-pointer connection)
-                                   code
-                                   -1
-                                   0
-                                   pointer-to-pointer
-                                   (null-pointer)))
-          (make-instance 'bindable-statement
-                         :database connection
-                         :pointer (mem-ref pointer-to-pointer :pointer))
-          (error 'cannot-prepare-statement
-                 :database connection
-                 :message (database-error-message connection)
-                 :sql code)))))
+    (%prepare-statement connection code 0)))
 
 (defconstant +sqlite-prepare-persistent+ #x01)
 
@@ -175,21 +180,7 @@ will store it differently.
 
 See PREPARE-STATEMENT for details.")
   (:method ((connection open-connection) (code string))
-    (with-foreign-object (pointer-to-pointer :pointer)
-      (if (eql +sqlite-ok+
-               (sqlite3-prepare-v3 (sqlite3-pointer connection)
-                                   code
-                                   -1
-                                   +sqlite-prepare-persistent+
-                                   pointer-to-pointer
-                                   (null-pointer)))
-          (make-instance 'bindable-statement
-                         :database connection
-                         :pointer (mem-ref pointer-to-pointer :pointer))
-          (error 'cannot-prepare-statement
-                 :database connection
-                 :message (database-error-message connection)
-                 :sql code)))))
+    (%prepare-statement connection code +sqlite-prepare-persistent+)))
 
 (defun call-with-statement (connection code function)
   (let ((statement (prepare-statement connection code)))
