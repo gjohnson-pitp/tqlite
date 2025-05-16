@@ -79,13 +79,6 @@
   (filename :string)
   (connection-pointer :pointer))
 
-(defcfun "sqlite3_prepare_v2" :int
-  (connection :pointer)
-  (sql-code :string)
-  (length :int)
-  (statement-pointer :pointer)
-  (string-pointer :pointer))
-
 (defcfun "sqlite3_prepare_v3" :int
   (connection :pointer)
   (sql-code :string)

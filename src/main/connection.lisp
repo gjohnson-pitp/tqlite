@@ -150,9 +150,10 @@ reset-statement")
   (:method ((connection open-connection) (code string))
     (with-foreign-object (pointer-to-pointer :pointer)
       (if (eql +sqlite-ok+
-               (sqlite3-prepare-v2 (sqlite3-pointer connection)
+               (sqlite3-prepare-v3 (sqlite3-pointer connection)
                                    code
                                    -1
+                                   0
                                    pointer-to-pointer
                                    (null-pointer)))
           (make-instance 'bindable-statement
