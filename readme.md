@@ -71,7 +71,7 @@ What type the parameter should be bound as is inferred from the type of the valu
 | string | text |
 | any other vector | BLOB |
 
-Note that A. binding `int64`'s is not supported at the moment, and B. in the case of BLOB's, the vector elements must all be unsigned bytes, or else an error will be thrown.
+Note that in the case of BLOB's, the vector elements must all be unsigned bytes, or else an error will be thrown.
 
 So we can do things like this:
 
@@ -92,7 +92,6 @@ Note that resetting a statement does *not* reset parameter bindings; stepping th
 
 - SQL code containing multiple SQL statements (as it is, any statement after the first will be ignored)
 - The UTF-16 versions of functions
-- The distinction between `int` and `int64`
 - Opening BLOB's as streams
 - Getting the value of a column in a data type other than what SQLite says it is by default
 
